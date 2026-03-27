@@ -17,8 +17,16 @@ st.set_page_config(
 @st.cache_data(ttl=60)
 def cargar_datos():
     sb = create_client(SUPABASE_URL, SUPABASE_KEY)
-    res = sb.table("registros_lectura").select("*").execute()
-    df = pd.DataFrame(res.data)
+    todos = []
+    lote = 1000
+    offset = 0
+    while True:
+        res = sb.table("registros_lectura").select("*").range(offset, offset + lote - 1).execute()
+        todos.extend(res.data)
+        if len(res.data) < lote:
+            break
+        offset += lote
+    df = pd.DataFrame(todos)
     if df.empty:
         return df
     df["fecha_trabajo"] = pd.to_datetime(df["fecha_trabajo"], format="%d/%m/%Y", errors="coerce")
